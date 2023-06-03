@@ -179,7 +179,7 @@ class ChatDetailsScreen extends StatelessWidget {
                                     onPressed: () {
                                       cubit.sendMessage(
                                           text: messageController.text,
-                                          receiverID: userModel.uID!);
+                                          userModel: userModel);
                                     },
                                     minWidth: 1.0,
                                     child: const Icon(

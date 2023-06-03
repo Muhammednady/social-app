@@ -164,3 +164,11 @@ class SocialUploadMessageImageErrorState extends SocialStates{
 
   SocialUploadMessageImageErrorState(this.error);
 }
+
+class SocialSendFCMSuccessState extends SocialStates{}
+
+class SocialSendFCMErrorState extends SocialStates{
+  final String error;
+
+  SocialSendFCMErrorState(this.error);
+}

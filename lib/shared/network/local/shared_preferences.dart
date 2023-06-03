@@ -15,6 +15,10 @@ class CachHelper {
     return sharedPreferences!.getString(userIDName);
   }
 
+   static Future<bool>  deleteUserID(String userIDName) async{
+    return await sharedPreferences!.remove(userIDName);
+  }
+
 
   static Future<bool> saveData(
       {required String key, required dynamic value}) async {

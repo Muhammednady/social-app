@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart';
 import 'package:bloc/bloc.dart';
@@ -12,16 +13,19 @@ import 'package:social_app/layout/social_layout/cubit/social_states.dart';
 import 'package:social_app/models/message_model.dart';
 import 'package:social_app/models/usercredential_model.dart';
 import 'package:social_app/modules/home_screen/home_screen.dart';
+import 'package:social_app/shared/network/remote/dio_helper.dart';
 import 'package:social_app/shared/states/loginstates.dart';
 
 import '../../../models/post_model.dart';
 import '../../../modules/chat_screen/chat_screen.dart';
+import '../../../modules/login_screen/login_screen.dart';
 import '../../../modules/posts_screen/post_screen.dart';
 import '../../../modules/settings_screen/settings_screen.dart';
 import '../../../modules/users_screen/users_screen.dart';
 import '../../../shared/components/components.dart';
 import '../../../shared/consonents.dart';
 import '../../../shared/cubit/register_cubit.dart';
+import '../../../shared/network/local/shared_preferences.dart';
 
 class SocialCubit extends Cubit<SocialStates> {
   SocialCubit() : super(SocialInitialState());
@@ -179,6 +183,7 @@ class SocialCubit extends Cubit<SocialStates> {
         email: userData!.email,
         phone: phone,
         uID: userData!.uID,
+        deviceToken: deviceToken,
         profileImage: profileImage ?? userData!.profileImage,
         coverImage: coverImage ?? userData!.coverImage,
         bio: bio,
@@ -240,6 +245,7 @@ class SocialCubit extends Cubit<SocialStates> {
               email: userData!.email,
               phone: phone,
               uID: userData!.uID,
+              deviceToken: deviceToken,
               profileImage: profileImageUrl,
               coverImage: coverImageUrl,
               bio: bio,
@@ -261,6 +267,7 @@ class SocialCubit extends Cubit<SocialStates> {
             email: userData!.email,
             phone: phone,
             uID: userData!.uID,
+            deviceToken: deviceToken,
             profileImage: profileImageUrl,
             coverImage: userData!.coverImage,
             bio: bio,
@@ -280,6 +287,7 @@ class SocialCubit extends Cubit<SocialStates> {
             email: userData!.email,
             phone: phone,
             uID: userData!.uID,
+            deviceToken: deviceToken,
             profileImage: userData!.profileImage,
             coverImage: coverImageUrl,
             bio: bio,
@@ -298,6 +306,7 @@ class SocialCubit extends Cubit<SocialStates> {
           email: userData!.email,
           phone: phone,
           uID: userData!.uID,
+          deviceToken: deviceToken,
           profileImage: userData!.profileImage,
           coverImage: userData!.coverImage,
           bio: bio,
@@ -404,7 +413,11 @@ class SocialCubit extends Cubit<SocialStates> {
 
     emit(SocialGetPostsLoadingState());
 
-    FirebaseFirestore.instance.collection('posts').get().then((value) {
+    FirebaseFirestore.instance
+        .collection('posts')
+        .where('uID', isEqualTo: userID)
+        .get()
+        .then((value) {
       value.docs.forEach((element) {
         element.reference.collection('likes').get().then((value) {
           likes.add(value.docs.length - 1);
@@ -415,7 +428,7 @@ class SocialCubit extends Cubit<SocialStates> {
           comments.add(value.docs.length - 1);
           emit(SocialGetPostsSuccessState());
         });
-        print('££££££££££££££££££££££');
+        emit(SocialGetPostsSuccessState());
       });
     }).catchError((error) {
       emit(SocialGetPostsErrorState(error.toString()));
@@ -550,11 +563,11 @@ class SocialCubit extends Cubit<SocialStates> {
     }
   }
 
-  void _sendMessageToPartner(String text, String receiverID,
+  void _sendMessageToPartner(String text, UserCredentialModel userModel,
       {String? imageUrl}) {
     MessageModel messageModel = MessageModel(
         text: text,
-        receiverID: receiverID,
+        receiverID: userModel.uID,
         senderID: userData!.uID,
         dateTime: DateTime.now().toString(),
         imageUrl: imageUrl ?? '');
@@ -563,7 +576,7 @@ class SocialCubit extends Cubit<SocialStates> {
         .collection('users')
         .doc(userData!.uID!)
         .collection('chats')
-        .doc(receiverID)
+        .doc(userModel.uID)
         .collection('messages')
         .add(messageModel.toMap())
         .then((value) {
@@ -574,7 +587,7 @@ class SocialCubit extends Cubit<SocialStates> {
 
     FirebaseFirestore.instance
         .collection('users')
-        .doc(receiverID)
+        .doc(userModel.uID)
         .collection('chats')
         .doc(userData!.uID)
         .collection('messages')
@@ -584,11 +597,16 @@ class SocialCubit extends Cubit<SocialStates> {
     }).catchError((error) {
       emit(SocialSendMessageErrorState(error.toString()));
     });
+
+    sendFCM(
+        deviceToken: userModel.deviceToken!,
+        title: 'Message from ${userData!.uID}',
+        body: text);
   }
 
   void uploadMessageImage({
     required String messageText,
-    required String receiverID,
+    required UserCredentialModel userModel,
   }) {
     //emit(SocialUploadPostLoadingState());
 
@@ -602,7 +620,7 @@ class SocialCubit extends Cubit<SocialStates> {
       value.ref.getDownloadURL().then((value) {
         emit(SocialUploadMessageImageSuccessState());
         messageImage = null;
-        _sendMessageToPartner(messageText, receiverID, imageUrl: value);
+        _sendMessageToPartner(messageText, userModel, imageUrl: value);
       }).catchError((error) {
         print('message Image error is : $error');
         emit(SocialUploadMessageImageErrorState(error.toString()));
@@ -610,11 +628,36 @@ class SocialCubit extends Cubit<SocialStates> {
     });
   }
 
-  void sendMessage({required String text, required String receiverID}) {
+  void sendMessage(
+      {required String text, required UserCredentialModel userModel}) {
     if (messageImage == null) {
-      _sendMessageToPartner(text, receiverID);
+      _sendMessageToPartner(text, userModel);
     } else {
-      uploadMessageImage(messageText: text, receiverID: receiverID);
+      uploadMessageImage(messageText: text, userModel: userModel);
     }
+  }
+
+  ///////////////////////////////FCM/////////////////////////
+  ///
+  void sendFCM({
+    required String deviceToken,
+    required String title,
+    required String body,
+  }) {
+    DioHelper.send(deviceToken, title, body).then((value) {
+      print("Response is :$value");
+      emit(SocialSendFCMSuccessState());
+    }).catchError((error) {
+      emit(SocialSendFCMErrorState(error.toString()));
+    });
+  }
+
+  /////////////////////////log out///////////////////////////
+  ///
+  void logOut(context) {
+    CachHelper.deleteUserID('uID').then((value) {
+      //FirebaseAuth.instance.currentUser.metadata
+      navigateToAndRemove(LogInSCreen(), context);
+    });
   }
 }

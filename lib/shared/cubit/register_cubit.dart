@@ -30,27 +30,38 @@ class SocialRegisterCubit extends Cubit<SocialRegisterStates> {
     emit(PasswordChangeRegisterState());
   }
 
-  void register(
-      {required String name,
-      required String email,
-      required String password,
-      required String phone,
-      required String bio,
-      }) {
+  void register({
+    required String name,
+    required String email,
+    required String password,
+    required String phone,
+    required String bio,
+  }) {
+    String uID;
     emit(SocialRegisterLoadingState());
     FirebaseAuth.instance
         .createUserWithEmailAndPassword(email: email, password: password)
         .then((value) {
+      uID = value.user!.uid;
       print('user credentials are : $value');
 
-      userID = value.user!.uid;
-
-      createUser(name: name, email: email, uid: value.user!.uid, phone: phone,bio: bio)
-          .then((value) {
-            
-        emit(SocialCreateUserSuccessState());
+      //userID = value.user!.uid;
+      uploadImage(ImageType.COVER).then((value) {
+        backgroundImageUrl = value;
+        uploadImage(ImageType.PROFILE).then((value) {
+          profileImageUrl = value;
+          createUser(name: name, email: email, uid: uID, phone: phone, bio: bio)
+              .then((value) {
+          //  emit(SocialRegisterSuccessState());
+            emit(SocialCreateUserSuccessState());
+          }).catchError((error) {
+            emit(SocialCreateUserErrorState(error.toString()));
+          });
+        }).catchError((error) {
+          print('error uploading a profile image');
+        });
       }).catchError((error) {
-        emit(SocialCreateUserErrorState(error.toString()));
+        print('error uploading a cover image');
       });
 
       // emit(SocialRegisterSuccessState());
@@ -59,21 +70,21 @@ class SocialRegisterCubit extends Cubit<SocialRegisterStates> {
     });
   }
 
-  Future<void> createUser(
-      {required String name,
-      required String email,
-      required String uid,
-      required String phone,
-      required String bio,
-
-      }) async {
+  Future<void> createUser({
+    required String name,
+    required String email,
+    required String uid,
+    required String phone,
+    required String bio,
+  }) async {
     UserCredentialModel userData = UserCredentialModel(
         name: name,
         email: email,
         uID: uid,
         phone: phone,
         bio: bio,
-        profileImage: personalImageUrl,
+        deviceToken: deviceToken,
+        profileImage: profileImageUrl,
         coverImage: backgroundImageUrl,
         isEmailVerified: false);
 
@@ -83,10 +94,12 @@ class SocialRegisterCubit extends Cubit<SocialRegisterStates> {
         .set(userData.toMap());
   }
 
+  File? backgroundImage;
+  File? profileImage;
   String? backgroundImageUrl;
-  String? personalImageUrl;
+  String? profileImageUrl;
 
-  void showSheet(ImageType imageType,context) {
+  void showSheet(ImageType imageType, context) {
     showModalBottomSheet(
         context: context,
         builder: ((context) {
@@ -103,7 +116,7 @@ class SocialRegisterCubit extends Cubit<SocialRegisterStates> {
                 ),
                 InkWell(
                   onTap: () async {
-                    await uploadImageFromGallery(imageType,context);
+                    await chooseImageFromGallery(imageType, context);
                   },
                   child: Row(
                     children: [
@@ -125,7 +138,7 @@ class SocialRegisterCubit extends Cubit<SocialRegisterStates> {
                 ),
                 InkWell(
                   onTap: () async {
-                    await uploadImageFromCamera(imageType,context);
+                    await chooseImageFromCamera(imageType, context);
                   },
                   child: Row(
                     children: [
@@ -149,64 +162,70 @@ class SocialRegisterCubit extends Cubit<SocialRegisterStates> {
         }));
   }
 
-  uploadImageFromGallery(ImageType imageType,context) async {
+  chooseImageFromGallery(ImageType imageType, context) async {
     XFile? imagechosen =
         await ImagePicker().pickImage(source: ImageSource.gallery);
     if (imagechosen != null) {
       Navigator.of(context).pop();
-      emit(SocialuploadImageFromGalleryLoadingState());
-      File image = File(imagechosen.path);
-      String imagename = basename(image.path);
-      int num = Random().nextInt(100000);
-      imagename = "$imagename$num";
-      UploadTask uploadTask =
-          FirebaseStorage.instance.ref(imagename).putFile(image);
-      TaskSnapshot taskSnapshot = uploadTask.snapshot;
-      taskSnapshot.ref.getDownloadURL().then((value) {
-        if(imageType == ImageType.COVER){
-          backgroundImageUrl = value;
-        }else{
-           personalImageUrl = value;
-        }
-        
-        emit(SocialuploadImageFromGallerySuccessState(value));
-      }).catchError((error) {
-        print('Error is :$error');
-        emit(SocialuploadImageFromGalleryErrorState(error.toString()));
-      });
+      if (imageType == ImageType.COVER) {
+        backgroundImage = File(imagechosen.path);
+      } else {
+        profileImage = File(imagechosen.path);
+      }
+
+      emit(SocialChooseImageFromGallerySuccessState());
+    } else {
+      emit(SocialChooseImageFromGalleryErrorState('Please,choose an image'));
     }
   }
 
-  uploadImageFromCamera(ImageType imageType,context) async {
+  chooseImageFromCamera(ImageType imageType, context) async {
     XFile? imagepicked =
         await ImagePicker().pickImage(source: ImageSource.camera);
 
     if (imagepicked != null) {
       Navigator.of(context).pop();
-      emit(SocialuploadImageFromGalleryLoadingState());
 
-      File image = File(imagepicked.path);
-      String imagename = basename(image.path);
-      int num = Random().nextInt(100000);
+      if (imageType == ImageType.COVER) {
+        backgroundImage = File(imagepicked.path);
+      } else {
+        profileImage = File(imagepicked.path);
+      }
+
+      emit(SocialChooseImageFromCameraSuccessState());
+    } else {
+      emit(SocialChooseImageFromCameraErrorState('Please,choose an image'));
+    }
+  }
+
+  Future<String> uploadImage(ImageType image) async {
+    //String imagename = basename(image!.path);
+    String imagename;
+    int num;
+    if (image == ImageType.COVER) {
+      imagename = Uri.file(backgroundImage!.path).pathSegments.last;
+      num = Random().nextInt(100000);
       imagename = "$imagename$num";
-      UploadTask uploadTask =
-          FirebaseStorage.instance.ref(imagename).putFile(image);
-      TaskSnapshot taskSnapshot = uploadTask.snapshot;
-      taskSnapshot.ref.getDownloadURL().then((value) {
-       if(imageType == ImageType.COVER){
-          backgroundImageUrl = value;
-        }else{
-           personalImageUrl = value;
-        }
-        emit(SocialuploadImageFromGallerySuccessState(value));
-      }).catchError((error) {
-        emit(SocialuploadImageFromGalleryErrorState(error.toString()));
-      });
+
+      var value = await FirebaseStorage.instance
+          .ref().child('users/' + imagename)
+          .putFile(backgroundImage!);
+
+      return await value.ref.getDownloadURL();
+      
+    } else {
+      imagename = Uri.file(profileImage!.path).pathSegments.last;
+      num = Random().nextInt(100000);
+      imagename = "$imagename$num";
+
+      FirebaseStorage.instance.ref('users/' + imagename).putFile(profileImage!);
+      var value = await FirebaseStorage.instance
+          .ref('users/' + imagename)
+          .putFile(profileImage!);
+
+      return await value.ref.getDownloadURL();
     }
   }
 }
 
-
-// ignore: constant_identifier_names
-enum ImageType{ COVER , PROFILE}
-
+enum ImageType { COVER, PROFILE }

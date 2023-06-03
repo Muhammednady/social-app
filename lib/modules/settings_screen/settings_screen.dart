@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_app/layout/social_layout/cubit/social_cubit.dart';
 import 'package:social_app/layout/social_layout/cubit/social_states.dart';
 import 'package:social_app/modules/edit_profile/edit_profile.dart';
+import 'package:social_app/modules/login_screen/login_screen.dart';
 import 'package:social_app/shared/components/components.dart';
+import 'package:social_app/shared/network/local/shared_preferences.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -160,9 +162,12 @@ class SettingsScreen extends StatelessWidget {
                 children: [
                   Expanded(
                       child: OutlinedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                          SocialCubit.get(context).logOut(context);
+
+                          },
                           child: Text(
-                            'Add Photoes',
+                            'Log out',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium!

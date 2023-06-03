@@ -30,12 +30,24 @@ class SocialLayout extends StatelessWidget {
         appBar: AppBar(
           title: Text('${cubit.labels[cubit.currentIndex]}'),
           actions: [
-            IconButton(
-                onPressed: () {
-
-                },
-                icon: const Icon(Icons.notifications_none)),
-            IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
+            Stack(
+             // alignment: Alignment.topRight,
+              children: [
+                IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.notifications_none,size: 30.0,)),
+                if(notificationsNumber != 0)    
+                CircleAvatar(
+                  backgroundColor: Colors.blue,
+                  radius: 12.0,
+                  child: Text(
+                    '${notificationsNumber}',
+                    style: TextStyle(color: Colors.white, fontSize: 15.0),
+                  ),
+                )
+              ],
+            ),
+            IconButton(onPressed: () {}, icon: const Icon(Icons.search,size: 30.0,)),
           ],
         ),
         body: cubit.screens[cubit.currentIndex],

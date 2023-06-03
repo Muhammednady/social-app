@@ -14,7 +14,7 @@ class SocialRegisterErrorState extends SocialRegisterStates{
 
 class PasswordChangeRegisterState extends SocialRegisterStates{}
 
-
+class SocialCreateUserLoadingState extends SocialRegisterStates{} 
 class SocialCreateUserSuccessState extends SocialRegisterStates{
    
 }
@@ -24,25 +24,27 @@ class SocialCreateUserErrorState extends SocialRegisterStates{
   SocialCreateUserErrorState(this.error);
 }
 
-class SocialuploadImageFromGalleryLoadingState extends SocialRegisterStates{}
-class SocialuploadImageFromGallerySuccessState extends SocialRegisterStates{
-  final String imageUrl;
+class SocialuploadImageLoadingState extends SocialRegisterStates{}
+class SocialuploadImageSuccessState extends SocialRegisterStates{
 
-  SocialuploadImageFromGallerySuccessState(this.imageUrl);
 }
-class SocialuploadImageFromGalleryErrorState extends SocialRegisterStates{
+class SocialuploadImageErrorState extends SocialRegisterStates{
   final String error;
 
-  SocialuploadImageFromGalleryErrorState(this.error);
+  SocialuploadImageErrorState(this.error);
 }
-class SocialuploadImageFromCameraLoadingState extends SocialRegisterStates{}
-class SocialuploadImageFromCameraSuccessState extends SocialRegisterStates{
-  final String imageUrl;
 
-  SocialuploadImageFromCameraSuccessState(this.imageUrl);
-}
-class SocialuploadImageFromCameraErrorState extends SocialRegisterStates{
+
+class SocialChooseImageFromGallerySuccessState extends SocialRegisterStates{}
+class SocialChooseImageFromGalleryErrorState extends SocialRegisterStates{
   final String error;
 
-  SocialuploadImageFromCameraErrorState(this.error);
+  SocialChooseImageFromGalleryErrorState(this.error);
+}
+
+class SocialChooseImageFromCameraSuccessState extends SocialRegisterStates{}
+class SocialChooseImageFromCameraErrorState extends SocialRegisterStates{
+  final String error;
+
+  SocialChooseImageFromCameraErrorState(this.error);
 }

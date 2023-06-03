@@ -1,6 +1,8 @@
 
 
 
+int notificationsNumber = 0;
+String? deviceToken;
 
 String? userID;
 String defaultDate = 'january 21,2021 at 11:00 pm';

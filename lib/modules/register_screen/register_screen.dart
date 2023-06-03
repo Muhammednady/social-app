@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -41,7 +40,26 @@ class RegisterSCreen extends StatelessWidget {
           }
         },
         builder: (context, state) {
-          SocialRegisterCubit cubit = SocialRegisterCubit.get(context);
+          ImageProvider backgroundImageProvider;
+          ImageProvider profileImageProvider;
+        SocialRegisterCubit cubit = SocialRegisterCubit.get(context);
+        var profileImage =cubit.profileImage;
+        var backgroundImage = cubit.backgroundImage;
+
+        if (backgroundImage == null) {
+          backgroundImageProvider = AssetImage(
+            'assets/images/image-gallery.png'
+          );
+        } else {
+          backgroundImageProvider = FileImage(backgroundImage);
+        }
+        if (profileImage == null) {
+          profileImageProvider = AssetImage(
+           'assets/images/businessman.png'
+          );
+        } else {
+          profileImageProvider = FileImage(profileImage);
+        }
           return Scaffold(
               key: scaffoldKey,
               appBar: AppBar(),
@@ -108,12 +126,12 @@ class RegisterSCreen extends StatelessWidget {
                               suffix: cubit.suffixIcon,
                               onSubmit: (value) {
                                 cubit.register(
-                                    name: nameController.text,
-                                    phone: phoneController.text,
-                                    email: emailController.text,
-                                    password: passwordController.text,
-                                    bio: bioController.text,
-                                    );
+                                  name: nameController.text,
+                                  phone: phoneController.text,
+                                  email: emailController.text,
+                                  password: passwordController.text,
+                                  bio: bioController.text,
+                                );
                               },
                               suffixpressed: () {
                                 cubit.changePasswordState();
@@ -153,54 +171,48 @@ class RegisterSCreen extends StatelessWidget {
                                 return null;
                               }),
                           const SizedBox(
-                            height: 5.0,
+                            height: 10.0,
                           ),
-                          if (state
-                                  is SocialuploadImageFromGalleryLoadingState ||
-                              state is SocialuploadImageFromCameraLoadingState)
-                              LinearProgressIndicator(),
-                              SizedBox(height: 5.0,),
-                            Center(
-                                child: Stack(
-                              alignment: Alignment.bottomRight,
-                              children: [
-                                InkWell(
-                                  onTap: () {
-                                    cubit.showSheet(ImageType.COVER,context);
-                                  },
+                        
+                          Center(
+                              child: Stack(
+                            alignment: Alignment.bottomRight,
+                            children: [
+                              InkWell(
+                                onTap: () {
+                                  cubit.showSheet(ImageType.COVER, context);
+                                },
+                                child: CircleAvatar(
+                                  radius: 61,
+                                  backgroundColor: Colors.grey[300],
                                   child: CircleAvatar(
                                     radius: 60,
-                                    backgroundColor: Colors.amber,
-                                    child: Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 25),
-                                      child: Text(
-                                        'Background Image',
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                      right: 12.0, bottom: 12.0),
-                                  child: CircleAvatar(
-                                    radius: 22.0,
                                     backgroundColor: Theme.of(context)
                                         .scaffoldBackgroundColor,
-                                    child: IconButton(
-                                        onPressed: () {
-                                          cubit.showSheet(ImageType.PROFILE, context);
-                                        },
-                                        icon: Icon(
-                                          Icons.camera_alt_outlined,
-                                          size: 30.0,
-                                          color: Colors.blue,
-                                        )),
+                                    backgroundImage:backgroundImageProvider
                                   ),
-                                )
-                              ],
-                            )),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12.0),
+                                child: InkWell(
+                                  onTap: () {
+                                    cubit.showSheet(ImageType.PROFILE, context);
+                                  },
+                                  child: CircleAvatar(
+                                    foregroundColor: Colors.grey[300],
+                                    radius: 31,
+                                    backgroundColor: Colors.grey[300],
+                                    child: CircleAvatar(
+                                        radius: 30.0,
+                                        backgroundColor: Theme.of(context)
+                                            .scaffoldBackgroundColor,
+                                        backgroundImage:profileImageProvider),
+                                  ),
+                                ),
+                              )
+                            ],
+                          )),
                           const SizedBox(
                             height: 5.0,
                           ),
@@ -211,18 +223,19 @@ class RegisterSCreen extends StatelessWidget {
                               : defaultButton(
                                   onpressed: () {
                                     if (formKey.currentState!.validate()) {
-                                      if(cubit.backgroundImageUrl == null ||cubit.personalImageUrl == null ){
-                                         showToast('Please, Choose both images', ToastStates.WARNING);
-                                      }else{
-                                         cubit.register(
+                                      if (cubit.backgroundImage == null ||
+                                          cubit.profileImage == null) {
+                                        showToast('Please, Choose both images',
+                                            ToastStates.WARNING);
+                                      } else {
+                                        cubit.register(
                                           name: nameController.text,
                                           email: emailController.text,
                                           password: passwordController.text,
                                           phone: phoneController.text,
                                           bio: bioController.text,
-                                          );
+                                        );
                                       }
-                                      
                                     }
                                   },
                                   isUppercase: true,

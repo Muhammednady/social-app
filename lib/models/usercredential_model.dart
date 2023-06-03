@@ -10,6 +10,7 @@ class UserCredentialModel {
   String? coverImage;
   String? bio;
   bool? isEmailVerified;
+  String? deviceToken;
 
   UserCredentialModel(
       {required this.name,
@@ -19,7 +20,9 @@ class UserCredentialModel {
       required this.profileImage,
       required this.coverImage,
       required this.bio,
-      required this.isEmailVerified});
+      required this.isEmailVerified,
+      required this.deviceToken,
+      });
 
   UserCredentialModel.fromJson(Map<String, dynamic> json) {
     name = json['name'];
@@ -30,6 +33,7 @@ class UserCredentialModel {
     coverImage = json['coverImage'];
     bio = json['bio'];
     isEmailVerified = json['isEmailVerified'];
+    deviceToken = json['deviceToken'];
   }
 
   Map<String, dynamic> toMap() {
@@ -41,7 +45,8 @@ class UserCredentialModel {
       'profileImage': profileImage,
       'coverImage': coverImage,
       'bio': bio,
-      'isEmailVerified': isEmailVerified
+      'isEmailVerified': isEmailVerified,
+      'deviceToken':deviceToken
     };
   }
 }
